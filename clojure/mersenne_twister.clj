@@ -29,9 +29,9 @@
 
 (def n 624)
 (def m 397)
-(def matrix-a 0x9908b0df)  					; constant vector a
-(def upper-mask 0x80000000)	 	  		; most significant w-r bits
-(def lower-mask 0x7fffffff)	 	  		; least significant w-r bits
+(def matrix-a 0x9908b0df)            ; constant vector a
+(def upper-mask 0x80000000)           ; most significant w-r bits
+(def lower-mask 0x7fffffff)           ; least significant w-r bits
 (def tempering-mask-b 0x9d2c5680)
 (def tempering-mask-c 0xefc60000)
 (defn tempering-shift-u [y] (bit-shift-right y 11))
@@ -43,58 +43,57 @@
 (def mti (ref (inc n)))
 
 (defn reset []
-	(dosync 
-		(ref-set mt [])
-		(ref-set mti (inc n)))
-	nil)
-		
+  (dosync 
+    (ref-set mt [])
+    (ref-set mti (inc n)))
+  nil)
+    
 (defn sgenrand [seed]
-	(dosync
-		(ref-set mt [])
-		(loop [i 0 s seed]
-			(if (< i n)
-				(let [mti     (bit-and s 0xffff0000)
-				      s-1     (inc (* 69069 s))]
-				   (ref-set mt (into @mt [(bit-or mti (bit-shift-right (bit-and s-1 0xffff0000) 16))]))
-				   (recur (inc i) (inc (* 69069 s-1))))))
-		(ref-set mti n)))
+  (dosync
+    (ref-set mt [])
+    (loop [i 0 s seed]
+      (if (< i n)
+        (let [mti     (bit-and s 0xffff0000)
+              s-1     (inc (* 69069 s))]
+           (ref-set mt (into @mt [(bit-or mti (bit-shift-right (bit-and s-1 0xffff0000) 16))]))
+           (recur (inc i) (inc (* 69069 s-1))))))
+    (ref-set mti n)))
 
 (defn _genrand [v1 v2 v3]
-	(let [y (bit-or (bit-and v1 upper-mask)
-	                (bit-and v2 lower-mask))]
-	  (bit-xor (bit-xor v3 
-	                    (bit-shift-right y 1))
-	           (if (= 0 (bit-and y 0x1))
-	              0
-	              matrix-a))))
-	              
+  (let [y (bit-or (bit-and v1 upper-mask)
+                  (bit-and v2 lower-mask))]
+    (bit-xor (bit-xor v3 (bit-shift-right y 1))
+             (if (= 0 (bit-and y 0x1))
+                0
+                matrix-a))))
+                
 ;; Return the next element from the mt array
 (defn genrand-n []
- 	(dosync
-		(if 
-		  (>= @mti n)
-				(do
-					(if (= @mti (inc n))
-						(sgenrand 4357))
-				  (ref-set mt  (loop [k 0 v []]
-							 					 (if (< k n)
-								 						(let [v-1 (cond 
-								 						            (< k (- n m)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth @mt (+ k m))))
-						 				   					  			(< k (dec n)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth v (+ k (- m n)))))
-						 				              			(= k (dec n)) (conj v (_genrand (nth @mt (dec n)) (nth v 0) (nth v (dec m)))))]
-						                 (recur (inc k) v-1))
-						                v)))
-					 (ref-set mti 0)))
-			;; Now return the element and advance the counter
-		  (let [retval (nth @mt @mti)]
-				(ref-set mti (inc @mti))
-				retval)))
+   (dosync
+    (if 
+      (>= @mti n)
+        (do
+          (if (= @mti (inc n))
+            (sgenrand 4357))
+          (ref-set mt  (loop [k 0 v []]
+                          (if (< k n)
+                             (let [v-1 (cond 
+                                         (< k (- n m)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth @mt (+ k m))))
+                                         (< k (dec n)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth v (+ k (- m n)))))
+                                         (= k (dec n)) (conj v (_genrand (nth @mt (dec n)) (nth v 0) (nth v (dec m)))))]
+                             (recur (inc k) v-1))
+                            v)))
+           (ref-set mti 0)))
+      ;; Now return the element and advance the counter
+      (let [retval (nth @mt @mti)]
+        (ref-set mti (inc @mti))
+        retval)))
    
 (defn genrand []
-		(let [y (genrand-n)
-		      y1 (bit-xor y (tempering-shift-u y))
-		      y2 (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b))
-		      y3 (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c))
-		      y4 (bit-xor y3 (tempering-shift-l y3))]
-		   y4))
-		  
+    (let [y (genrand-n)
+          y1 (bit-xor y (tempering-shift-u y))
+          y2 (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b))
+          y3 (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c))
+          y4 (bit-xor y3 (tempering-shift-l y3))]
+       y4))
+      
