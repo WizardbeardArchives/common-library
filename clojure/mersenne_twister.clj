@@ -48,10 +48,10 @@
     (ref-set mti (inc n)))
   nil)
     
-(defn sgenrand [seed]
+(defn sgenrand [#^Integer seed]
   (dosync
     (ref-set mt [])
-    (loop [i 0 s seed]
+    (loop [i (int 0) s seed]
       (if (< i n)
         (let [mti     (bit-and s 0xffff0000)
               s-1     (inc (* 69069 s))]
@@ -59,9 +59,9 @@
            (recur (inc i) (inc (* 69069 s-1))))))
     (ref-set mti n)))
 
-(defn _genrand [v1 v2 v3]
-  (let [y (bit-or (bit-and v1 upper-mask)
-                  (bit-and v2 lower-mask))]
+(defn _genrand [#^Integer v1 #^Integer v2 #^Integer v3]
+  (let [y (int (bit-or (bit-and v1 upper-mask)
+                  (bit-and v2 lower-mask)))]
     (bit-xor (bit-xor v3 (bit-shift-right y 1))
              (if (= 0 (bit-and y 0x1))
                 0
@@ -75,7 +75,7 @@
         (do
           (if (= @mti (inc n))
             (sgenrand 4357))
-          (ref-set mt  (loop [k 0 v []]
+          (ref-set mt  (loop [k (int 0) v []]
                           (if (< k n)
                              (let [v-1 (cond 
                                          (< k (- n m)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth @mt (+ k m))))
@@ -85,15 +85,15 @@
                             v)))
            (ref-set mti 0)))
       ;; Now return the element and advance the counter
-      (let [retval (nth @mt @mti)]
+      (let [retval (int (nth @mt @mti))]
         (ref-set mti (inc @mti))
         retval)))
    
 (defn genrand []
-    (let [y (genrand-n)
-          y1 (bit-xor y (tempering-shift-u y))
-          y2 (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b))
-          y3 (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c))
-          y4 (bit-xor y3 (tempering-shift-l y3))]
+    (let [y (int (genrand-n))
+          y1 (int (bit-xor y (tempering-shift-u y)))
+          y2 (int (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b)))
+          y3 (int (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c)))
+          y4 (int (bit-xor y3 (tempering-shift-l y3)))]
        y4))
       
