@@ -48,7 +48,8 @@
     (ref-set mti (inc n)))
   nil)
     
-(defn sgenrand [#^Integer seed]
+(defn sgenrand [seed]
+  "Seed the original array"
   (dosync
     (ref-set mt [])
     (loop [i (int 0) s seed]
@@ -59,28 +60,31 @@
            (recur (inc i) (inc (* 69069 s-1))))))
     (ref-set mti n)))
 
-(defn _genrand [#^Integer v1 #^Integer v2 #^Integer v3]
-  (let [y (int (bit-or (bit-and v1 upper-mask)
-                  (bit-and v2 lower-mask)))]
+(defn -genrand-inner [v1 v2 v3]
+  "Factored from the reference implementation"
+  (let [y (bit-or (bit-and v1 upper-mask)
+                  (bit-and v2 lower-mask))]
     (bit-xor (bit-xor v3 (bit-shift-right y 1))
              (if (= 0 (bit-and y 0x1))
                 0
                 matrix-a))))
                 
-;; Return the next element from the mt array
-(defn genrand-n []
+(defn -genrand-nth []
+	 "Returns the next number from the seuquence (factored from the reference implementation)"
    (dosync
     (if 
+    	;; Do we need to regenerate the state?
       (>= @mti n)
         (do
           (if (= @mti (inc n))
             (sgenrand 4357))
+          ;; Build a new vector of integers from the old one (and itself!)
           (ref-set mt  (loop [k (int 0) v []]
                           (if (< k n)
                              (let [v-1 (cond 
-                                         (< k (- n m)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth @mt (+ k m))))
-                                         (< k (dec n)) (conj v (_genrand (nth @mt k) (nth @mt (inc k)) (nth v (+ k (- m n)))))
-                                         (= k (dec n)) (conj v (_genrand (nth @mt (dec n)) (nth v 0) (nth v (dec m)))))]
+                                         (< k (- n m)) (conj v (-genrand-inner (nth @mt k) (nth @mt (inc k)) (nth @mt (+ k m))))
+                                         (< k (dec n)) (conj v (-genrand-inner (nth @mt k) (nth @mt (inc k)) (nth v (+ k (- m n)))))
+                                         (= k (dec n)) (conj v (-genrand-inner (nth @mt (dec n)) (nth v 0) (nth v (dec m)))))]
                              (recur (inc k) v-1))
                             v)))
            (ref-set mti 0)))
@@ -90,10 +94,12 @@
         retval)))
    
 (defn genrand []
-    (let [y (int (genrand-n))
-          y1 (int (bit-xor y (tempering-shift-u y)))
-          y2 (int (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b)))
-          y3 (int (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c)))
-          y4 (int (bit-xor y3 (tempering-shift-l y3)))]
-       y4))
+	"Generate the next number in the sequence, if this number is the nth in the sequence then
+	 a new state table will be generated in this call"	
+  (let [y (-genrand-nth)
+        y1 (bit-xor y (tempering-shift-u y))
+        y2 (bit-xor y1 (bit-and (tempering-shift-s y1) tempering-mask-b))
+        y3 (bit-xor y2 (bit-and (tempering-shift-t y2) tempering-mask-c))
+        y4 (bit-xor y3 (tempering-shift-l y3))]
+     y4))
       
