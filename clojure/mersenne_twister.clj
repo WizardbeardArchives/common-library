@@ -1,6 +1,6 @@
 ;;;; A Clojure implementation of the Mersenne Twister algorithm  
 ;;;;
-;;;; Copyright (c) 2009 Steve Knight <stkni@gmail.com>
+;;;; Copyright (c) 2009 Steve Knight <stknig@gmail.com>
 ;;;;
 ;;;; Copyright (C) 1997, 1999 Makoto Matsumoto and Takuji Nishimura. 
 ;;;; matumoto@math.keio.ac.jp    
@@ -29,9 +29,9 @@
 
 (def n 624)
 (def m 397)
-(def matrix-a 0x9908b0df)            ; constant vector a
-(def upper-mask 0x80000000)           ; most significant w-r bits
-(def lower-mask 0x7fffffff)           ; least significant w-r bits
+(def matrix-a 0x9908b0df)         
+(def upper-mask 0x80000000)     
+(def lower-mask 0x7fffffff)    
 (def tempering-mask-b 0x9d2c5680)
 (def tempering-mask-c 0xefc60000)
 (defn tempering-shift-u [y] (bit-shift-right y 11))
@@ -70,10 +70,9 @@
                 matrix-a))))
                 
 (defn -genrand-nth []
-	 "Returns the next number from the seuquence (factored from the reference implementation)"
-   (dosync
+  "Returns the next number from the seuquence (factored from the reference implementation)"
+  (dosync
     (if 
-    	;; Do we need to regenerate the state?
       (>= @mti n)
         (do
           (if (= @mti (inc n))
@@ -94,7 +93,7 @@
         retval)))
    
 (defn genrand []
-	"Generate the next number in the sequence, if this number is the nth in the sequence then
+  "Generate the next number in the sequence, if this number is the nth in the sequence then
 	 a new state table will be generated in this call"	
   (let [y (-genrand-nth)
         y1 (bit-xor y (tempering-shift-u y))
